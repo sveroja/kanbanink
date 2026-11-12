@@ -1,0 +1,65 @@
+[versions]
+agp = "9.5.1"
+coreKtx = "1.10.1"
+junit = "4.13.2"
+junitVersion = "1.1.5"
+espressoCore = "3.5.1"
+lifecycleRuntimeKtx = "2.6.1"
+lifecycle = "2.11.0"
+activityCompose = "1.8.0"
+kotlin = "2.2.10"
+composeBom = "2026.02.01"
+ink = "1.0.0"
+inputMotionPrediction = "1.0.1"
+room = "2.8.5"
+ksp = "2.3.13"
+onyxPen = "1.5.9"
+onyxDevice = "1.3.7"
+hiddenApiBypass = "6.2"
+
+[libraries]
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
+androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+
+# Jetpack Ink
+androidx-ink-authoring = { module = "androidx.ink:ink-authoring", version.ref = "ink" }
+androidx-ink-brush = { module = "androidx.ink:ink-brush", version.ref = "ink" }
+androidx-ink-geometry = { module = "androidx.ink:ink-geometry", version.ref = "ink" }
+androidx-ink-nativeloader = { module = "androidx.ink:ink-nativeloader", version.ref = "ink" }
+androidx-ink-rendering = { module = "androidx.ink:ink-rendering", version.ref = "ink" }
+androidx-ink-strokes = { module = "androidx.ink:ink-strokes", version.ref = "ink" }
+androidx-ink-storage = { module = "androidx.ink:ink-storage", version.ref = "ink" }
+androidx-ink-authoring-android = { module = "androidx.ink:ink-authoring-android", version.ref = "ink" }
+androidx-ink-authoring-compose = { module = "androidx.ink:ink-authoring-compose", version.ref = "ink" }
+androidx-ink-brush-compose = { module = "androidx.ink:ink-brush-compose", version.ref = "ink" }
+androidx-ink-geometry-compose = { module = "androidx.ink:ink-geometry-compose", version.ref = "ink" }
+androidx-input-motionprediction = { module = "androidx.input:input-motionprediction", version.ref = "inputMotionPrediction" }
+
+# Room
+androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
+androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+
+# Onyx Boox
+onyx-sdk-pen = { module = "com.onyx.android.sdk:onyxsdk-pen", version.ref = "onyxPen" }
+onyx-sdk-device = { module = "com.onyx.android.sdk:onyxsdk-device", version.ref = "onyxDevice" }
+hiddenapibypass = { module = "org.lsposed.hiddenapibypass:hiddenapibypass", version.ref = "hiddenApiBypass" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

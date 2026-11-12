@@ -23,8 +23,8 @@ android {
         applicationId = "com.example.kanban"
         minSdk = 26 // Jetpack Ink benötigt API 26+
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -48,9 +48,12 @@ android {
         }
         release {
             if (hasReleaseKey) signingConfig = signingConfigs.getByName("release")
+            // R8-Optimierung bewusst aus: Die Teil-Optimierung von kotlin.** hat
+            // Klassen versteckt, von denen das Onyx SDK erbt (IllegalAccessError
+            // beim Start, v1.0). Das Onyx SDK nutzt viel Reflection – ohne
+            // Optimierung ist die App größer, aber zuverlässig.
             optimization {
-                enable = true
-                packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
+                enable = false
             }
         }
     }

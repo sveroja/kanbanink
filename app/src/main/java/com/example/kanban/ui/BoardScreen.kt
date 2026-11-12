@@ -199,12 +199,25 @@ private fun CardEditor(state: EditorState, viewModel: BoardViewModel) {
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
             )
-            ToolButton("Stift", selected = !state.isEraserMode) { viewModel.setEraserMode(false) }
-            ToolButton("Radierer", selected = state.isEraserMode) { viewModel.setEraserMode(true) }
+            ToolButton("Fertig", selected = true, onClick = viewModel::saveEditor)
+        }
+
+        Spacer(Modifier.padding(4.dp))
+
+        // Werkzeuge in eigener Zeile, damit es auch im Hochformat passt.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        ) {
+            ToolButton("Stift", selected = state.tool == EditorTool.PEN) { viewModel.setTool(EditorTool.PEN) }
+            ToolButton("Marker", selected = state.tool == EditorTool.HIGHLIGHTER) {
+                viewModel.setTool(EditorTool.HIGHLIGHTER)
+            }
+            ToolButton("Radierer", selected = state.tool == EditorTool.ERASER) { viewModel.setTool(EditorTool.ERASER) }
             ToolButton("↶", enabled = state.canUndo, onClick = viewModel::undo)
             ToolButton("↷", enabled = state.canRedo, onClick = viewModel::redo)
             ToolButton("Leeren", enabled = state.strokes.isNotEmpty(), onClick = viewModel::clearAll)
-            ToolButton("Fertig", selected = true, onClick = viewModel::saveEditor)
         }
 
         Spacer(Modifier.padding(12.dp))
@@ -217,8 +230,8 @@ private fun CardEditor(state: EditorState, viewModel: BoardViewModel) {
             // Boox: Onyx Pen SDK mit E-Ink-Schnellzeichnen, nur Stift-Eingabe.
             OnyxPenSurface(
                 strokes = state.strokes,
-                brush = viewModel.penBrush,
-                isEraserMode = state.isEraserMode,
+                brush = viewModel.brushFor(state.tool),
+                isEraserMode = state.tool == EditorTool.ERASER,
                 onStrokesFinished = viewModel::onStrokesFinished,
                 onEraseStart = viewModel::startErase,
                 onErase = viewModel::erase,
@@ -229,8 +242,8 @@ private fun CardEditor(state: EditorState, viewModel: BoardViewModel) {
             // Andere Geräte/Emulator: Jetpack Ink.
             InkEditorSurface(
                 strokes = state.strokes,
-                brush = viewModel.penBrush,
-                isEraserMode = state.isEraserMode,
+                brush = viewModel.brushFor(state.tool),
+                isEraserMode = state.tool == EditorTool.ERASER,
                 onStrokesFinished = viewModel::onStrokesFinished,
                 onEraseStart = viewModel::startErase,
                 onErase = viewModel::erase,

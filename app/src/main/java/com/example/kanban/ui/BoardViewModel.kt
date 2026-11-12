@@ -34,12 +34,14 @@ class Card(
     val strokes: List<Stroke>,
 )
 
+enum class EditorTool { PEN, HIGHLIGHTER, ERASER }
+
 data class EditorState(
     /** null = neue Karte. */
     val cardId: Long?,
     val lane: Int,
     val strokes: List<Stroke>,
-    val isEraserMode: Boolean = false,
+    val tool: EditorTool = EditorTool.PEN,
     val canUndo: Boolean = false,
     val canRedo: Boolean = false,
 )
@@ -93,6 +95,17 @@ class BoardViewModel(application: Application) : AndroidViewModel(application) {
         size = 5f,
         epsilon = 0.1f,
     )
+
+    /** Gelber, halbtransparenter Textmarker. */
+    val highlighterBrush: Brush = Brush.createWithComposeColor(
+        family = StockBrushes.highlighter(),
+        color = Color(0xFFFFE600).copy(alpha = 0.45f),
+        size = 28f,
+        epsilon = 0.1f,
+    )
+
+    fun brushFor(tool: EditorTool): Brush =
+        if (tool == EditorTool.HIGHLIGHTER) highlighterBrush else penBrush
 
     private val _editor = MutableStateFlow<EditorState?>(null)
     val editor: StateFlow<EditorState?> = _editor.asStateFlow()
@@ -160,8 +173,8 @@ class BoardViewModel(application: Application) : AndroidViewModel(application) {
         if (history[historyIndex].isNotEmpty()) pushStrokes(emptyList())
     }
 
-    fun setEraserMode(enabled: Boolean) {
-        _editor.update { it?.copy(isEraserMode = enabled) }
+    fun setTool(tool: EditorTool) {
+        _editor.update { it?.copy(tool = tool) }
     }
 
     fun startErase() {

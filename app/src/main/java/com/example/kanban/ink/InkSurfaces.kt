@@ -24,6 +24,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.core.graphics.withSave
 import androidx.ink.authoring.compose.InProgressStrokes
 import androidx.ink.brush.Brush
+import androidx.ink.brush.StockBrushes
 import androidx.ink.rendering.android.canvas.CanvasStrokeRenderer
 import androidx.ink.strokes.Stroke
 
@@ -35,17 +36,28 @@ const val WORLD_WIDTH = 1000f
 const val WORLD_HEIGHT = 500f
 const val CARD_ASPECT_RATIO = WORLD_WIDTH / WORLD_HEIGHT
 
-/** Zeichnet Weltkoordinaten-Striche skaliert auf einen Android-Canvas. */
+private val highlighterFamily by lazy { StockBrushes.highlighter() }
+
+val Stroke.isHighlighter: Boolean get() = brush.family == highlighterFamily
+
+/**
+ * Zeichnet Weltkoordinaten-Striche skaliert auf einen Android-Canvas.
+ * Textmarker werden immer zuerst gezeichnet, damit die Schrift darüber
+ * schwarz und scharf bleibt – egal in welcher Reihenfolge geschrieben wurde.
+ */
 fun android.graphics.Canvas.drawInkStrokes(
     strokes: List<Stroke>,
     renderer: CanvasStrokeRenderer,
     scale: Float,
 ) {
     val transform = android.graphics.Matrix().apply { setScale(scale, scale) }
-    for (stroke in strokes) {
-        withSave {
-            scale(scale, scale)
-            renderer.draw(canvas = this, stroke = stroke, strokeToScreenTransform = transform)
+    for (highlighterPass in listOf(true, false)) {
+        for (stroke in strokes) {
+            if (stroke.isHighlighter != highlighterPass) continue
+            withSave {
+                scale(scale, scale)
+                renderer.draw(canvas = this, stroke = stroke, strokeToScreenTransform = transform)
+            }
         }
     }
 }

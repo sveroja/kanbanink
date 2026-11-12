@@ -18,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.ink.brush.Brush
+import androidx.ink.brush.StockBrushes
 import androidx.ink.rendering.android.canvas.CanvasStrokeRenderer
 import androidx.ink.strokes.Stroke
 import androidx.lifecycle.Lifecycle
@@ -90,6 +91,11 @@ private class OnyxPenController(
 ) : SurfaceHolder.Callback {
 
     var brush: Brush? = null
+        set(value) {
+            if (field == value) return
+            field = value
+            if (rawDrawingOpen) touchHelper?.let { applyRawStyle(it) }
+        }
     var onStrokesFinished: (List<Stroke>) -> Unit = {}
     var onEraseStart: () -> Unit = {}
     var onErase: (Float, Float) -> Unit = { _, _ -> }
@@ -144,10 +150,13 @@ private class OnyxPenController(
         val old = strokes
         if (newStrokes === old) return
         strokes = newStrokes
-        // Neuer Strich angehängt: Der Stift hat ihn schon selbst auf den Bildschirm
-        // gezeichnet. Bei Radieren/Rückgängig muss die Raw-Ebene neu aufgebaut werden.
+        // Neuer Stiftstrich angehängt: Der Stift hat ihn schon selbst auf den Bildschirm
+        // gezeichnet. Bei Radieren/Rückgängig muss die Raw-Ebene neu aufgebaut werden –
+        // ebenso nach einem Textmarker, damit er UNTER der Schrift landet.
         val isAppend = newStrokes.size >= old.size && old.indices.all { newStrokes[it] === old[it] }
-        redraw(refreshRawLayer = !isAppend)
+        val appendedHighlighter = isAppend &&
+            newStrokes.subList(old.size, newStrokes.size).any { it.isHighlighter }
+        redraw(refreshRawLayer = !isAppend || appendedHighlighter)
     }
 
     private val shouldRawDraw get() = rawDrawingOpen && active && !eraserMode
@@ -177,17 +186,33 @@ private class OnyxPenController(
         closeRawDrawing()
         val limit = Rect().also { surfaceView.getLocalVisibleRect(it) }
         try {
-            helper.setStrokeWidth((brush?.size ?: 5f) * scale * 0.8f)
-                .setStrokeStyle(TouchHelper.STROKE_STYLE_FOUNTAIN)
-                .setStrokeColor(Color.BLACK)
-                .setLimitRect(limit, emptyList())
-                .openRawDrawing()
+            applyRawStyle(helper)
+            helper.setLimitRect(limit, emptyList()).openRawDrawing()
             rawDrawingOpen = true
+            applyRawStyle(helper)
         } catch (e: Exception) {
             Log.e(TAG, "Onyx Raw-Drawing konnte nicht gestartet werden", e)
         }
         applyRawDrawingEnabled()
         redraw(refreshRawLayer = true)
+    }
+
+    /** Stiftdarstellung des E-Ink-Controllers passend zum aktuellen Werkzeug. */
+    private fun applyRawStyle(helper: TouchHelper) {
+        val current = brush ?: return
+        try {
+            if (current.family == StockBrushes.highlighter()) {
+                helper.setStrokeStyle(TouchHelper.STROKE_STYLE_MARKER)
+                    .setStrokeColor(Color.YELLOW)
+                    .setStrokeWidth(current.size * scale)
+            } else {
+                helper.setStrokeStyle(TouchHelper.STROKE_STYLE_FOUNTAIN)
+                    .setStrokeColor(Color.BLACK)
+                    .setStrokeWidth(current.size * scale * 0.8f)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Stiftstil konnte nicht gesetzt werden", e)
+        }
     }
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {

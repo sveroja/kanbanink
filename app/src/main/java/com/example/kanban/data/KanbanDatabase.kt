@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.Flow
 @Entity(tableName = "cards")
 class CardEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    /** Spaltenindex: 0 = To Do, 1 = In Arbeit, 2 = Erledigt. */
+    /** Spaltenindex: 0 = Backlog, 1 = In Arbeit, 2 = Erledigt. */
     val lane: Int,
     /** Sortierung innerhalb der Spalte (aufsteigend). */
     val position: Long,

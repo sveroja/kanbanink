@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-val LANE_TITLES = listOf("To Do", "In Arbeit", "Erledigt")
+val LANE_TITLES = listOf("Backlog", "In Arbeit", "Erledigt")
 
 class Card(
     val id: Long,

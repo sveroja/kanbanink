@@ -80,7 +80,7 @@ fun OnyxPenSurface(
     }
 
     AndroidView(
-        modifier = modifier.aspectRatio(CARD_ASPECT_RATIO),
+        modifier = modifier.aspectRatio(CARD_ASPECT_RATIO, matchHeightConstraintsFirst = true),
         factory = { context -> SurfaceView(context).also(controller::attach) },
         onRelease = { controller.detach() },
     )
@@ -229,6 +229,7 @@ private class OnyxPenController(
         val canvas = holder.lockCanvas() ?: return
         try {
             canvas.drawColor(Color.WHITE)
+            canvas.drawCardGuides(scale)
             canvas.drawInkStrokes(strokes, renderer, scale)
         } finally {
             holder.unlockCanvasAndPost(canvas)

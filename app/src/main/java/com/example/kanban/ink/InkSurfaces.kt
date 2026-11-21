@@ -33,8 +33,37 @@ import androidx.ink.strokes.Stroke
  * (unabhängig von Bildschirmgröße/Ausrichtung). Beim Zeichnen wird nur skaliert.
  */
 const val WORLD_WIDTH = 1000f
-const val WORLD_HEIGHT = 500f
+
+/** Ganzes Kartenblatt im Editor: oben Überschrift, darunter Details. */
+const val WORLD_HEIGHT = 1200f
 const val CARD_ASPECT_RATIO = WORLD_WIDTH / WORLD_HEIGHT
+
+/** Oberer Streifen des Blatts = Überschrift; nur dieser erscheint in der Übersicht. */
+const val TITLE_HEIGHT = 200f
+const val TITLE_ASPECT_RATIO = WORLD_WIDTH / TITLE_HEIGHT
+
+/** true, wenn mindestens ein Strich (teilweise) im Überschrift-Streifen liegt. */
+fun List<Stroke>.hasTitle(): Boolean = any { stroke ->
+    val box = stroke.shape.computeBoundingBox() ?: return@any false
+    box.yMin < TITLE_HEIGHT
+}
+
+/** Hilfslinie zwischen Überschrift und Details plus Beschriftung (nur im Editor). */
+fun android.graphics.Canvas.drawCardGuides(scale: Float) {
+    val line = android.graphics.Paint().apply {
+        color = android.graphics.Color.GRAY
+        strokeWidth = 2f
+        pathEffect = android.graphics.DashPathEffect(floatArrayOf(18f, 12f), 0f)
+    }
+    val y = TITLE_HEIGHT * scale
+    drawLine(0f, y, WORLD_WIDTH * scale, y, line)
+    val label = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.GRAY
+        textSize = 16f * scale
+    }
+    drawText("Überschrift", 10f * scale, 24f * scale, label)
+    drawText("Details", 10f * scale, y + 24f * scale, label)
+}
 
 private val highlighterFamily by lazy { StockBrushes.highlighter() }
 
@@ -68,15 +97,22 @@ private fun DrawScope.drawStrokesScaled(
     scale: Float,
 ) = drawContext.canvas.nativeCanvas.drawInkStrokes(strokes, renderer, scale)
 
-/** Nur-Lese-Darstellung der Handschrift einer Karte, skaliert auf die verfügbare Breite. */
+/**
+ * Nur-Lese-Darstellung der Überschrift einer Karte (oberer Streifen des Blatts),
+ * skaliert auf die verfügbare Breite. Alles darunter wird abgeschnitten.
+ */
 @Composable
 fun StrokeThumbnail(
     strokes: List<Stroke>,
     modifier: Modifier = Modifier,
 ) {
     val renderer = remember { CanvasStrokeRenderer.create() }
-    Canvas(modifier = modifier.fillMaxWidth().aspectRatio(CARD_ASPECT_RATIO)) {
-        drawStrokesScaled(strokes, renderer, size.width / WORLD_WIDTH)
+    Canvas(modifier = modifier.fillMaxWidth().aspectRatio(TITLE_ASPECT_RATIO)) {
+        val nativeCanvas = drawContext.canvas.nativeCanvas
+        nativeCanvas.withSave {
+            clipRect(0f, 0f, size.width, size.height)
+            drawInkStrokes(strokes, renderer, size.width / WORLD_WIDTH)
+        }
     }
 }
 
@@ -117,7 +153,7 @@ fun InkEditorSurface(
 
     Box(
         modifier = modifier
-            .aspectRatio(CARD_ASPECT_RATIO)
+            .aspectRatio(CARD_ASPECT_RATIO, matchHeightConstraintsFirst = true)
             .onSizeChanged { widthPx = it.width.toFloat() },
     ) {
         if (widthPx <= 0f) return@Box
@@ -127,6 +163,7 @@ fun InkEditorSurface(
         }
 
         Canvas(modifier = Modifier.fillMaxSize()) {
+            drawContext.canvas.nativeCanvas.drawCardGuides(screenScale)
             drawStrokesScaled(strokesToDraw, renderer, screenScale)
         }
 

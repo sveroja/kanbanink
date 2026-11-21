@@ -39,6 +39,7 @@ import com.example.kanban.ink.InkEditorSurface
 import com.example.kanban.ink.OnyxPenSurface
 import com.example.kanban.ink.isOnyxDevice
 import com.example.kanban.ink.StrokeThumbnail
+import com.example.kanban.ink.hasTitle
 
 @Composable
 fun KanbanApp(viewModel: BoardViewModel, modifier: Modifier = Modifier) {
@@ -51,7 +52,6 @@ fun KanbanApp(viewModel: BoardViewModel, modifier: Modifier = Modifier) {
             onAddCard = viewModel::newCard,
             onOpenCard = viewModel::editCard,
             onMoveCard = viewModel::moveCard,
-            onDeleteCard = viewModel::deleteCard,
         )
         editor?.let { state ->
             // Zurück-Geste speichert, damit nichts Geschriebenes verloren geht.
@@ -69,10 +69,7 @@ private fun BoardScreen(
     onAddCard: (Int) -> Unit,
     onOpenCard: (Card) -> Unit,
     onMoveCard: (Card, Int) -> Unit,
-    onDeleteCard: (Card) -> Unit,
 ) {
-    var cardToDelete by remember { mutableStateOf<Card?>(null) }
-
     Row(
         modifier = Modifier.fillMaxSize().padding(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -103,8 +100,8 @@ private fun BoardScreen(
                 HorizontalDivider(thickness = 2.dp, color = Color.Black)
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     items(cards, key = { it.id }) { card ->
                         KanbanCard(
@@ -112,66 +109,54 @@ private fun BoardScreen(
                             onOpen = { onOpenCard(card) },
                             onMoveLeft = if (laneIndex > 0) ({ onMoveCard(card, -1) }) else null,
                             onMoveRight = if (laneIndex < LANE_TITLES.lastIndex) ({ onMoveCard(card, +1) }) else null,
-                            onDelete = { cardToDelete = card },
                         )
                     }
                 }
             }
         }
     }
-
-    cardToDelete?.let { card ->
-        AlertDialog(
-            onDismissRequest = { cardToDelete = null },
-            title = { Text("Karte löschen?") },
-            text = { StrokeThumbnail(strokes = card.strokes, modifier = Modifier.border(1.dp, Color.Black)) },
-            confirmButton = {
-                TextButton(onClick = { onDeleteCard(card); cardToDelete = null }) { Text("Löschen") }
-            },
-            dismissButton = {
-                TextButton(onClick = { cardToDelete = null }) { Text("Abbrechen") }
-            },
-        )
-    }
 }
 
+/** Kompakte Karte: nur die handschriftliche Überschrift, links/rechts verschieben. */
 @Composable
 private fun KanbanCard(
     card: Card,
     onOpen: () -> Unit,
     onMoveLeft: (() -> Unit)?,
     onMoveRight: (() -> Unit)?,
-    onDelete: () -> Unit,
 ) {
-    Column(
+    val hasTitle = remember(card.strokes) { card.strokes.hasTitle() }
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .border(1.5.dp, Color.Black)
             .background(Color.White),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
+        CardAction("◀", enabled = onMoveLeft != null) { onMoveLeft?.invoke() }
         // Kein Ripple/Indication: auf E-Ink erzeugt das nur Ghosting.
-        StrokeThumbnail(
-            strokes = card.strokes,
-            modifier = Modifier.clickable(interactionSource = null, indication = null, onClick = onOpen),
-        )
-        HorizontalDivider(color = Color.Black)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .clickable(interactionSource = null, indication = null, onClick = onOpen),
+            contentAlignment = Alignment.Center,
         ) {
-            CardAction("◀", enabled = onMoveLeft != null) { onMoveLeft?.invoke() }
-            Spacer(Modifier.weight(1f))
-            CardAction("✕", enabled = true, onClick = onDelete)
-            Spacer(Modifier.weight(1f))
-            CardAction("▶", enabled = onMoveRight != null) { onMoveRight?.invoke() }
+            StrokeThumbnail(strokes = card.strokes)
+            if (!hasTitle) Text("(ohne Überschrift)", color = Color.Gray, fontSize = 14.sp)
         }
+        CardAction("▶", enabled = onMoveRight != null) { onMoveRight?.invoke() }
     }
 }
 
 @Composable
 private fun CardAction(label: String, enabled: Boolean, onClick: () -> Unit) {
-    TextButton(onClick = onClick, enabled = enabled) {
-        Text(label, fontSize = 22.sp, color = if (enabled) Color.Black else Color.LightGray)
+    TextButton(
+        onClick = onClick,
+        enabled = enabled,
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp),
+        modifier = Modifier.widthIn(min = 40.dp),
+    ) {
+        Text(label, fontSize = 20.sp, color = if (enabled) Color.Black else Color.LightGray)
     }
 }
 
@@ -179,6 +164,21 @@ private fun CardAction(label: String, enabled: Boolean, onClick: () -> Unit) {
 
 @Composable
 private fun CardEditor(state: EditorState, viewModel: BoardViewModel) {
+    var confirmDelete by remember { mutableStateOf(false) }
+    if (confirmDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text("Karte löschen?") },
+            text = { Text("Die Karte wird endgültig gelöscht.") },
+            confirmButton = {
+                TextButton(onClick = { confirmDelete = false; viewModel.deleteEditorCard() }) { Text("Löschen") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) { Text("Abbrechen") }
+            },
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -199,6 +199,7 @@ private fun CardEditor(state: EditorState, viewModel: BoardViewModel) {
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
             )
+            if (state.cardId != null) ToolButton("Löschen") { confirmDelete = true }
             ToolButton("Fertig", selected = true, onClick = viewModel::saveEditor)
         }
 
@@ -220,11 +221,15 @@ private fun CardEditor(state: EditorState, viewModel: BoardViewModel) {
             ToolButton("Leeren", enabled = state.strokes.isNotEmpty(), onClick = viewModel::clearAll)
         }
 
-        Spacer(Modifier.padding(12.dp))
+        Spacer(Modifier.padding(8.dp))
 
+        // Das Kartenblatt füllt den restlichen Platz (Seitenverhältnis bleibt fest).
+        Box(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            contentAlignment = Alignment.TopCenter,
+        ) {
         val surfaceModifier = Modifier
             .widthIn(max = 900.dp)
-            .fillMaxWidth()
             .border(2.dp, Color.Black)
         if (isOnyxDevice) {
             // Boox: Onyx Pen SDK mit E-Ink-Schnellzeichnen, nur Stift-Eingabe.
@@ -250,6 +255,7 @@ private fun CardEditor(state: EditorState, viewModel: BoardViewModel) {
                 onEraseEnd = viewModel::endErase,
                 modifier = surfaceModifier,
             )
+        }
         }
     }
 }

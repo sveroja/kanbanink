@@ -224,4 +224,11 @@ class BoardViewModel(application: Application) : AndroidViewModel(application) {
     fun discardEditor() {
         _editor.value = null
     }
+
+    /** Löscht die gerade geöffnete Karte (bzw. verwirft eine neue) und schließt den Editor. */
+    fun deleteEditorCard() {
+        val id = _editor.value?.cardId
+        _editor.value = null
+        if (id != null) viewModelScope.launch(Dispatchers.IO) { dao.delete(id) }
+    }
 }

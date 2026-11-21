@@ -31,7 +31,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -163,14 +162,8 @@ private fun CardAction(label: String, enabled: Boolean, onClick: () -> Unit) {
 
 // ------------------------------------------------------------------ Editor
 
-/** Paketname der Boox-Notizen-App. */
-private const val BOOX_NOTES_PACKAGE = "com.onyx.android.note"
-
 @Composable
 private fun CardEditor(state: EditorState, viewModel: BoardViewModel) {
-    val context = LocalContext.current
-    // null, wenn die Notizen-App nicht installiert ist (z. B. im Emulator) – dann kein Knopf.
-    val notesIntent = remember { context.packageManager.getLaunchIntentForPackage(BOOX_NOTES_PACKAGE) }
     var confirmDelete by remember { mutableStateOf(false) }
     if (confirmDelete) {
         AlertDialog(
@@ -206,9 +199,6 @@ private fun CardEditor(state: EditorState, viewModel: BoardViewModel) {
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
             )
-            // Öffnet die Boox-Notizen-App; die Karte bleibt im Editor offen und
-            // ist beim Zurückkehren unverändert da.
-            notesIntent?.let { intent -> ToolButton("Notizen") { context.startActivity(intent) } }
             if (state.cardId != null) ToolButton("Löschen") { confirmDelete = true }
             ToolButton("Fertig", selected = true, onClick = viewModel::saveEditor)
         }
